@@ -3,8 +3,9 @@ use scarlet::color::RGBColor;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::collections::HashSet;
-// use serde_json::Result;
+use std::path::Path;
 
+use image::GenericImage;
 use image::GenericImageView;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -31,7 +32,7 @@ fn main() {
     let mut flosses: Vec<Floss> = serde_json::from_str(dmc_json).unwrap();
 
     if let Some(filename) = filename_opt {
-        let img = image::open(filename).unwrap();
+        let img = image::open(&filename).unwrap();
 
         let mut all_colors = BTreeSet::new();
 
@@ -106,6 +107,8 @@ fn main() {
 
             let terminal_black = crossterm::Colored::Bg(crossterm::Color::Rgb { r: 0, g: 0, b: 0 });
 
+            println!("{} {} {}", pixel_color.r, pixel_color.g, pixel_color.b);
+
             println!(
                 "{}     {} {}     {} {}     {} {}     {} {}     {}",
                 terminal_pixel_color,
@@ -126,7 +129,7 @@ fn main() {
                 b: floss_for_pixel.b as u8,
             });
 
-            let toBg = |color: &Floss| {
+            let to_bg = |color: &Floss| {
                 crossterm::Colored::Bg(crossterm::Color::Rgb {
                     r: color.r as u8,
                     g: color.g as u8,
@@ -136,25 +139,71 @@ fn main() {
 
             println!(
                 "{}{:5}{} {}{:5}{} {}{:5}{} {}{:5}{} {}{:5}{}",
-                toBg(&flosses[0]),
+                to_bg(&flosses[0]),
                 flosses[0].floss,
                 terminal_black,
-                toBg(&flosses[1]),
+                to_bg(&flosses[1]),
                 flosses[1].floss,
                 terminal_black,
-                toBg(&flosses[2]),
+                to_bg(&flosses[2]),
                 flosses[2].floss,
                 terminal_black,
-                toBg(&flosses[3]),
+                to_bg(&flosses[3]),
                 flosses[3].floss,
                 terminal_black,
-                toBg(&flosses[4]),
+                to_bg(&flosses[4]),
                 flosses[4].floss,
                 terminal_black,
             );
 
             println!("");
         }
+
+        let extension = Path::new(&filename)
+            .extension()
+            .and_then(std::ffi::OsStr::to_str)
+            .unwrap();
+
+        let main_path = Path::new(&filename)
+            .file_stem()
+            .and_then(std::ffi::OsStr::to_str)
+            .unwrap();
+
+        let original_width = img.width();
+        let original_height = img.height();
+
+        println!("Original: {} x {}", original_width, original_height);
+
+        let factor = 1000 / original_width;
+
+        let mut resized = img.resize(
+            factor * original_width,
+            factor * original_height,
+            image::FilterType::Nearest,
+        );
+
+        let width = resized.width();
+        let height = resized.height();
+
+        println!("New: {} x {}", width, height);
+
+        let cross_size = width / original_width;
+
+        println!("Cross size: {}", cross_size);
+
+        for x in 0..width {
+            for y in 0..height {
+                if x % cross_size == 0 || y % cross_size == 0 {
+                    let mut pixel = resized.get_pixel(x, y);
+                    pixel.data[0] = 0;
+                    pixel.data[1] = 0;
+                    pixel.data[2] = 0;
+                    resized.put_pixel(x, y, pixel);
+                }
+            }
+        }
+
+        resized.save(main_path.to_owned() + "-resized." + extension);
     } else {
         println!("No filename provided");
     }
