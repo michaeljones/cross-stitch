@@ -1,8 +1,7 @@
-use scarlet::color::Color;
 use scarlet::color::RGBColor;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::collections::HashSet;
 use std::path::Path;
 
 use image::GenericImage;
@@ -32,7 +31,7 @@ fn main() {
     let mut flosses: Vec<Floss> = serde_json::from_str(dmc_json).unwrap();
 
     if let Some(filename) = filename_opt {
-        let img = image::open(&filename).unwrap();
+        let mut img = image::open(&filename).unwrap();
 
         let mut all_colors = BTreeSet::new();
 
@@ -44,10 +43,9 @@ fn main() {
             });
         }
 
-        for color in all_colors {
-            let mut min_distance = 100000000.0;
-            let mut floss_for_pixel = flosses[0].clone();
+        let mut color_lookup = BTreeMap::new();
 
+        for color in all_colors {
             let pixel_color = RGBColor {
                 r: color.r as f64,
                 g: color.g as f64,
@@ -123,12 +121,6 @@ fn main() {
                 terminal_black,
             );
 
-            let terminal_floss_color = crossterm::Colored::Bg(crossterm::Color::Rgb {
-                r: floss_for_pixel.r as u8,
-                g: floss_for_pixel.g as u8,
-                b: floss_for_pixel.b as u8,
-            });
-
             let to_bg = |color: &Floss| {
                 crossterm::Colored::Bg(crossterm::Color::Rgb {
                     r: color.r as u8,
@@ -157,12 +149,22 @@ fn main() {
             );
 
             println!("");
+
+            color_lookup.insert(
+                PixelColor {
+                    r: pixel_color.r as u8,
+                    g: pixel_color.g as u8,
+                    b: pixel_color.b as u8,
+                },
+                PixelColor {
+                    r: flosses[0].r,
+                    g: flosses[0].g,
+                    b: flosses[0].b,
+                },
+            );
         }
 
-        let extension = Path::new(&filename)
-            .extension()
-            .and_then(std::ffi::OsStr::to_str)
-            .unwrap();
+        let extension = "png";
 
         let main_path = Path::new(&filename)
             .file_stem()
@@ -171,6 +173,23 @@ fn main() {
 
         let original_width = img.width();
         let original_height = img.height();
+
+        for x in 0..original_width {
+            for y in 0..original_height {
+                let mut pixel = img.get_pixel(x, y);
+                let pixel_color = PixelColor {
+                    r: pixel.data[0] as u8,
+                    g: pixel.data[1] as u8,
+                    b: pixel.data[2] as u8,
+                };
+                if let Some(floss_color) = color_lookup.get(&pixel_color) {
+                    pixel.data[0] = floss_color.r;
+                    pixel.data[1] = floss_color.g;
+                    pixel.data[2] = floss_color.b;
+                    img.put_pixel(x, y, pixel);
+                }
+            }
+        }
 
         println!("Original: {} x {}", original_width, original_height);
 
@@ -203,7 +222,9 @@ fn main() {
             }
         }
 
-        resized.save(main_path.to_owned() + "-resized." + extension);
+        resized
+            .save(main_path.to_owned() + "-resized." + extension)
+            .unwrap();
     } else {
         println!("No filename provided");
     }
