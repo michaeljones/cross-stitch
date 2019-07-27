@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for i in *.jpg; do
+    echo -n "\"$i\": \""
+    convert $i -scale 1x1\! -format '%[pixel:u]' info:-
+    echo \",
+done
