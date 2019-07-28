@@ -9,14 +9,11 @@ use image::GenericImageView;
 
 #[derive(Clone, Serialize, Deserialize)]
 struct Floss {
-    floss: String,
-    description: String,
-    r: u8,
-    g: u8,
-    b: u8,
+    code: String,
+    color: PixelColor,
 }
 
-#[derive(Ord, PartialOrd, PartialEq, Eq, Debug)]
+#[derive(Ord, PartialOrd, PartialEq, Eq, Debug, Clone, Serialize, Deserialize)]
 struct PixelColor {
     r: u8,
     g: u8,
@@ -26,7 +23,7 @@ struct PixelColor {
 fn main() {
     let filename_opt = std::env::args().nth(1);
 
-    let dmc_json = include_str!("rgb-dmc.json");
+    let dmc_json = include_str!("dmc-colors-rgb.json");
 
     let mut flosses: Vec<Floss> = serde_json::from_str(dmc_json).unwrap();
 
@@ -54,15 +51,15 @@ fn main() {
 
             flosses.sort_by(|a, b| {
                 let a_color = RGBColor {
-                    r: a.r as f64,
-                    g: a.g as f64,
-                    b: a.b as f64,
+                    r: a.color.r as f64,
+                    g: a.color.g as f64,
+                    b: a.color.b as f64,
                 };
 
                 let b_color = RGBColor {
-                    r: b.r as f64,
-                    g: b.g as f64,
-                    b: b.b as f64,
+                    r: b.color.r as f64,
+                    g: b.color.g as f64,
+                    b: b.color.b as f64,
                 };
 
                 // let a_dist = pixel_color.distance(&a_color);
@@ -121,30 +118,30 @@ fn main() {
                 terminal_black,
             );
 
-            let to_bg = |color: &Floss| {
+            let to_bg = |floss: &Floss| {
                 crossterm::Colored::Bg(crossterm::Color::Rgb {
-                    r: color.r as u8,
-                    g: color.g as u8,
-                    b: color.b as u8,
+                    r: floss.color.r,
+                    g: floss.color.g,
+                    b: floss.color.b,
                 })
             };
 
             println!(
                 "{}{:5}{} {}{:5}{} {}{:5}{} {}{:5}{} {}{:5}{}",
                 to_bg(&flosses[0]),
-                flosses[0].floss,
+                flosses[0].code,
                 terminal_black,
                 to_bg(&flosses[1]),
-                flosses[1].floss,
+                flosses[1].code,
                 terminal_black,
                 to_bg(&flosses[2]),
-                flosses[2].floss,
+                flosses[2].code,
                 terminal_black,
                 to_bg(&flosses[3]),
-                flosses[3].floss,
+                flosses[3].code,
                 terminal_black,
                 to_bg(&flosses[4]),
-                flosses[4].floss,
+                flosses[4].code,
                 terminal_black,
             );
 
@@ -157,9 +154,9 @@ fn main() {
                     b: pixel_color.b as u8,
                 },
                 PixelColor {
-                    r: flosses[0].r,
-                    g: flosses[0].g,
-                    b: flosses[0].b,
+                    r: flosses[0].color.r,
+                    g: flosses[0].color.g,
+                    b: flosses[0].color.b,
                 },
             );
         }
