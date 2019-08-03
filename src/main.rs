@@ -2,12 +2,13 @@ use scarlet::color::RGBColor;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::io::Write;
 use std::path::Path;
 
 use image::GenericImage;
 use image::GenericImageView;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Ord, PartialOrd, PartialEq, Eq, Clone, Serialize, Deserialize)]
 struct Floss {
     code: String,
     color: PixelColor,
@@ -18,6 +19,13 @@ struct PixelColor {
     r: u8,
     g: u8,
     b: u8,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Image {
+    width: u32,
+    height: u32,
+    flosses: Vec<Vec<String>>,
 }
 
 fn main() {
@@ -40,7 +48,7 @@ fn main() {
             });
         }
 
-        let mut color_lookup = BTreeMap::new();
+        let mut floss_lookup = BTreeMap::new();
 
         for color in all_colors {
             let pixel_color = RGBColor {
@@ -147,17 +155,13 @@ fn main() {
 
             println!("");
 
-            color_lookup.insert(
+            floss_lookup.insert(
                 PixelColor {
                     r: pixel_color.r as u8,
                     g: pixel_color.g as u8,
                     b: pixel_color.b as u8,
                 },
-                PixelColor {
-                    r: flosses[0].color.r,
-                    g: flosses[0].color.g,
-                    b: flosses[0].color.b,
-                },
+                flosses[0].clone(),
             );
         }
 
@@ -171,19 +175,26 @@ fn main() {
         let original_width = img.width();
         let original_height = img.height();
 
-        for x in 0..original_width {
-            for y in 0..original_height {
+        let mut floss_image: Vec<Vec<String>> = Vec::new();
+
+        for _ in 0..original_height {
+            floss_image.push(Vec::new());
+        }
+
+        for y in 0..original_height {
+            for x in 0..original_width {
                 let mut pixel = img.get_pixel(x, y);
                 let pixel_color = PixelColor {
                     r: pixel.data[0] as u8,
                     g: pixel.data[1] as u8,
                     b: pixel.data[2] as u8,
                 };
-                if let Some(floss_color) = color_lookup.get(&pixel_color) {
-                    pixel.data[0] = floss_color.r;
-                    pixel.data[1] = floss_color.g;
-                    pixel.data[2] = floss_color.b;
+                if let Some(floss) = floss_lookup.get(&pixel_color) {
+                    pixel.data[0] = floss.color.r;
+                    pixel.data[1] = floss.color.g;
+                    pixel.data[2] = floss.color.b;
                     img.put_pixel(x, y, pixel);
+                    floss_image[y as usize].push(floss.code.clone());
                 }
             }
         }
@@ -222,6 +233,16 @@ fn main() {
         resized
             .save(main_path.to_owned() + "-resized." + extension)
             .unwrap();
+
+        let json_image = Image {
+            width: original_width,
+            height: original_height,
+            flosses: floss_image,
+        };
+
+        let list = serde_json::to_string(&json_image).unwrap();
+
+        std::fs::write(main_path.to_owned() + ".json", list).unwrap();
     } else {
         println!("No filename provided");
     }
