@@ -228,7 +228,18 @@ fn main() {
 
         for x in 0..width {
             for y in 0..height {
-                if x % cross_size == 0 || y % cross_size == 0 {
+                let on_vert_line = x % cross_size == 0;
+                let on_horiz_line = y % cross_size == 0;
+
+                let on_five_vert_line = x % (cross_size * 5) == 0;
+                let on_five_horiz_line = y % (cross_size * 5) == 0;
+
+                let make_black = on_five_vert_line
+                    || on_five_horiz_line
+                    || (on_vert_line && (y % 4 == 0 || y % 4 == 1))
+                    || (on_horiz_line && (x % 4 == 0 || x % 4 == 1));
+
+                if make_black {
                     let mut pixel = resized.get_pixel(x, y);
                     pixel.data[0] = 0;
                     pixel.data[1] = 0;
