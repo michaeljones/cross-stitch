@@ -2,7 +2,6 @@ use scarlet::color::RGBColor;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::io::Write;
 use std::path::Path;
 
 use image::GenericImage;
@@ -112,19 +111,21 @@ fn main() {
 
             println!("{} {} {}", pixel_color.r, pixel_color.g, pixel_color.b);
 
-            println!(
-                "{}     {} {}     {} {}     {} {}     {} {}     {}",
-                terminal_pixel_color,
-                terminal_black,
-                terminal_pixel_color,
-                terminal_black,
-                terminal_pixel_color,
-                terminal_black,
-                terminal_pixel_color,
-                terminal_black,
-                terminal_pixel_color,
-                terminal_black,
-            );
+            for _ in 1..3 {
+                println!(
+                    "{}     {} {}     {} {}     {} {}     {} {}     {}",
+                    terminal_pixel_color,
+                    terminal_black,
+                    terminal_pixel_color,
+                    terminal_black,
+                    terminal_pixel_color,
+                    terminal_black,
+                    terminal_pixel_color,
+                    terminal_black,
+                    terminal_pixel_color,
+                    terminal_black,
+                );
+            }
 
             let to_bg = |floss: &Floss| {
                 crossterm::Colored::Bg(crossterm::Color::Rgb {
@@ -134,23 +135,30 @@ fn main() {
                 })
             };
 
+            for _ in 1..3 {
+                println!(
+                    "{}{:5}{} {}{:5}{} {}{:5}{} {}{:5}{} {}{:5}{}",
+                    to_bg(&flosses[0]),
+                    "",
+                    terminal_black,
+                    to_bg(&flosses[1]),
+                    "",
+                    terminal_black,
+                    to_bg(&flosses[2]),
+                    "",
+                    terminal_black,
+                    to_bg(&flosses[3]),
+                    "",
+                    terminal_black,
+                    to_bg(&flosses[4]),
+                    "",
+                    terminal_black,
+                );
+            }
+
             println!(
-                "{}{:5}{} {}{:5}{} {}{:5}{} {}{:5}{} {}{:5}{}",
-                to_bg(&flosses[0]),
-                flosses[0].code,
-                terminal_black,
-                to_bg(&flosses[1]),
-                flosses[1].code,
-                terminal_black,
-                to_bg(&flosses[2]),
-                flosses[2].code,
-                terminal_black,
-                to_bg(&flosses[3]),
-                flosses[3].code,
-                terminal_black,
-                to_bg(&flosses[4]),
-                flosses[4].code,
-                terminal_black,
+                "{:5} {:5} {:5} {:5} {:5}",
+                flosses[0].code, flosses[1].code, flosses[2].code, flosses[3].code, flosses[4].code,
             );
 
             println!("");
